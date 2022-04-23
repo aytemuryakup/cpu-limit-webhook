@@ -1,0 +1,13 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: admission-webhook
+  namespace: kube-system
+spec:
+  selector:
+    app: webhook
+  ports:
+  - protocol: TCP
+    port: 443
+    targetPort: 8443

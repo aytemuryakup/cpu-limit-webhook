@@ -1,0 +1,30 @@
+---
+- name: gitlab installation
+  hosts: local
+  gather_facts: no
+  vars_files:
+    - ./variable.yml
+  tasks:
+    - name: Create ca file for caBundle
+      shell: |
+        cd {{ project_folder }}/certs
+        openssl genrsa -out ca.key 2048
+        openssl req -x509 -new -nodes -key ca.key -days 1000 -out ca.crt -subj '/CN={{ cn_name }}'
+    - name: set caBundle
+      shell: |
+        cd {{ project_folder }}/certs
+        export CABUNDLE=$(cat ca.crt | base64 | awk 'NF {sub(/\r/, ""); printf "%s",$0;}')
+        cat {{ project_folder }}/manifests/admissionwebhook/mutatingwebhook.yaml.tpl | envsubst '${CABUNDLE}' > {{ project_folder }}/manifests/admissionwebhook/mutatingwebhook.yaml
+    - name: Create server certificate
+      shell: |
+        cd {{ project_folder }}/certs
+        openssl genrsa -out server.key 2048
+        openssl req -new -key server.key -out server.csr -subj "/CN={{ cn_name }}" \
+        -config server.conf
+        openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 1000 \
+        -extensions v3_req -extfile server.conf
+    - name: Create secret yaml
+      shell: |
+        cd {{ project_folder }}
+        /usr/local/bin/kubectl -n kube-system create secret tls cpu-limit-certs --cert=certs/server.crt \
+        --key=certs/server.key --dry-run=client -o yaml > manifests/deployment/tls-secret.yaml

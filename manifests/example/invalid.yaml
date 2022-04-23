@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-av
+  namespace: whlab
+  labels:
+    app: test-av
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-av
+  template:
+    metadata:
+      labels:
+        app: test-av
+    spec:
+      containers:
+      - name: test-av
+        image: nginx
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: 0.5Gi
+            cpu: 1
+          limits:
+            memory: 0.5Gi
+            cpu: 3
